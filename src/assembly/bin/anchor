@@ -1,0 +1,36 @@
+#!/bin/bash
+# resolve links - $0 may be a softlink
+if [ -z "$ANCHOR_HOME" ];then
+  PRG="$0"
+  while [ -h "$PRG" ] ; do
+    ls=$(ls -ld "$PRG")
+    link=$(expr "$ls" : '.*-> \(.*\)$')
+    if expr "$link" : '/.*' > /dev/null; then
+      PRG="$link"
+    else
+      PRG=$(dirname "$PRG")/"$link"
+    fi
+  done
+
+  cd "$(dirname "$PRG")/.." || exit 1
+  ANCHOR_HOME="$(pwd)"
+  export ANCHOR_HOME
+  cd - &>/dev/null || exit 1
+fi
+
+# Directory definitions
+export ANCHOR_BIN=${ANCHOR_BIN:-$ANCHOR_HOME/bin}
+export ANCHOR_CONF=${ANCHOR_CONF:-$ANCHOR_HOME/conf}
+export ANCHOR_DOC=${ANCHOR_DOC:-$ANCHOR_HOME/doc}
+export ANCHOR_LIB=${ANCHOR_LIB:-$ANCHOR_HOME/lib}
+
+JARS=$(find "$ANCHOR_LIB" -name '*.jar' | tr '\n' ':')
+
+#--add-exports java.base/java.lang=ALL-UNNAMED
+#--add-exports java.base/jdk.internal.misc=ALL-UNNAMED
+COMMAND="java -cp $ANCHOR_CONF:$JARS \
+	-Dlogback.verbose=true \
+	-Dlogging.config=$ANCHOR_CONF/anchor-logger.xml \
+	-Dconfig.file=$ANCHOR_CONF/config.properties \
+	-Dlogback.configurationFile=$ANCHOR_CONF/anchor-logger.xml io.aergo.sample.AppLauncher $@"
+$COMMAND

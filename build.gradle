@@ -1,0 +1,41 @@
+plugins {
+  id 'java'
+  id 'application'
+}
+
+ext {
+  herajVersion = '0.12.0'
+}
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+  mavenLocal()
+  maven {
+    url "http://dist.wso2.org/maven2"
+  }
+  mavenCentral()
+  jcenter()
+}
+
+dependencies {
+  compileOnly "org.projectlombok:lombok:1.16.6"
+  implementation "io.aergo:heraj-smart-contract:${herajVersion}"
+  implementation "com.beust:jcommander:1.72"
+  testImplementation "junit:junit:4.12"
+}
+
+distributions {
+  main {
+    baseName = 'anchoring'
+    contents {
+      from { 'src/assembly' }
+    }
+  }
+}
+
+application {
+  mainClassName = 'io.aergo.sample.AppLauncher'
+  applicationName = 'dummy'
+}
