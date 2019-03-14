@@ -17,21 +17,21 @@ import java.util.Properties;
 
 public class AnchoringRunner {
 
-  protected String sqlTestNet;
-  protected String testNet;
+  protected String sourceNode;
+  protected String targetNode;
 
-  protected String sqlContract;
-  protected String testnetContract;
+  protected String sourceContract;
+  protected String targetContract;
 
   protected String encryptedPrivateKey;
   protected String password;
 
   public AnchoringRunner(final Properties props) {
-    this.sqlTestNet = getProperty(props, "sqltestNet");
-    this.testNet = getProperty(props, "testNet");
+    this.sourceNode = getProperty(props, "sourceNode");
+    this.targetNode = getProperty(props, "targetNode");
 
-    this.sqlContract = getProperty(props, "sqlContract");
-    this.testnetContract = getProperty(props, "testnetContract");
+    this.sourceContract = getProperty(props, "sourceContract");
+    this.targetContract = getProperty(props, "targetContract");
 
     this.encryptedPrivateKey = props.getProperty("encrypedPrivateKey");
     this.password = props.getProperty("password");
@@ -55,35 +55,31 @@ public class AnchoringRunner {
       System.out.println("Encrypted key: " + key.export(arguments.getPassword()));
       System.out.println("Address: " + key.getAddress());
     } else if (arguments.isListening()) {
-      System.out.println("Listening event of " + sqlContract);
+      System.out.println("Listening event of " + sourceContract);
       stream();
     } else {
       System.err.println("Neither --kengen nor --listen don't set. For more information, --help");
     }
   }
 
-  public void stream() {
-    try (Wallet sqlTestNetWallet = supplySqlTestNetWallet();
-        Wallet testNetWallet = supplyTestNetWallet()) {
+  protected void stream() {
+    try (Wallet sourceChainWallet = supplySourceChainWallet();
+        Wallet targetChainWallet = supplyTargetChainWallet()) {
 
-      final EventFilter eventFilter = EventFilter.newBuilder(ContractAddress.of(sqlContract))
+      final EventFilter eventFilter = EventFilter.newBuilder(ContractAddress.of(sourceContract))
           .build();
 
-      final ContractAddress contractAddress = ContractAddress.of(testnetContract);
+      final ContractAddress contractAddress = ContractAddress.of(targetContract);
       final TestnetContract contract =
           new SmartContractFactory().create(TestnetContract.class, contractAddress);
-      contract.bind(testNetWallet);
+      contract.bind(targetChainWallet);
       final Subscription<Event> subscription =
-          sqlTestNetWallet.subscribeEvent(eventFilter, new StreamObserver<Event>() {
+          sourceChainWallet.subscribeEvent(eventFilter, new StreamObserver<Event>() {
 
             @Override
             public void onNext(Event value) {
               System.err.println("Event received: " + value);
-              final List<Object> args = value.getArgs();
-              final String owner = (String) args.get(0);
-              final int height = (int) args.get(1);
-              final int count = (int) args.get(2);
-              contract.syncdb(height, owner, count);
+              callBack(contract, value);
             }
 
             @Override
@@ -101,15 +97,25 @@ public class AnchoringRunner {
     }
   }
 
-  public Wallet supplySqlTestNetWallet() {
+  @Customizable
+  protected void callBack(final TestnetContract contract, final Event eventValue) {
+    final List<Object> args = eventValue.getArgs();
+    final String owner = (String) args.get(0);
+    final int height = (int) args.get(1);
+    final int count = (int) args.get(2);
+    contract.syncdb(height, owner, count);
+  }
+
+
+  protected Wallet supplySourceChainWallet() {
     return new WalletBuilder()
-        .withEndpoint(sqlTestNet)
+        .withEndpoint(sourceNode)
         .build(WalletType.Naive);
   }
 
-  public Wallet supplyTestNetWallet() {
+  protected Wallet supplyTargetChainWallet() {
     final Wallet wallet = new WalletBuilder()
-        .withEndpoint(testNet)
+        .withEndpoint(targetNode)
         .build(WalletType.Naive);
     final AergoKey key = AergoKey.of(encryptedPrivateKey, password);
     System.out.println("Currently binded account: " + key.getAddress());
