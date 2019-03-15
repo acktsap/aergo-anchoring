@@ -1,10 +1,14 @@
 plugins {
   id 'java'
-  id 'application'
+  id 'distribution'
 }
 
 ext {
-  herajVersion = '0.12.0'
+  lombokVersion = '1.16.6'
+  herajVersion = '0.12.1'
+  jcommanderVersion = '1.72'
+  logbackVersion = '1.2.3'
+  junitVersion = '4.12'
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
@@ -20,10 +24,11 @@ repositories {
 }
 
 dependencies {
-  compileOnly "org.projectlombok:lombok:1.16.6"
+  compileOnly "org.projectlombok:lombok:${lombokVersion}"
   implementation "io.aergo:heraj-smart-contract:${herajVersion}"
-  implementation "com.beust:jcommander:1.72"
-  testImplementation "junit:junit:4.12"
+  implementation "com.beust:jcommander:${jcommanderVersion}"
+  runtimeOnly "ch.qos.logback:logback-classic:${logbackVersion}"
+  testImplementation "junit:junit:${junitVersion}"
 }
 
 distributions {
@@ -31,11 +36,10 @@ distributions {
     baseName = 'anchoring'
     contents {
       from { 'src/assembly' }
+      into('lib') {
+        from (project.jar)
+        from (project.configurations.runtimeClasspath)
+      }
     }
   }
-}
-
-application {
-  mainClassName = 'io.aergo.sample.AppLauncher'
-  applicationName = 'dummy'
 }

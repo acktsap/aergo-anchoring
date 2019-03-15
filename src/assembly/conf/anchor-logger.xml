@@ -9,9 +9,8 @@
       <Pattern>%d{HH:mm} %highlight(%-5level) %cyan(%logger{15}) - %msg%n</Pattern>
     </layout>
   </appender>
-  <root level="NONE">
-    <!--
+  <root level="INFO">
     <appender-ref ref="STDOUT" />
-    -->
   </root>
+  <logger name="io.aergo" level="warn"/>
 </configuration>

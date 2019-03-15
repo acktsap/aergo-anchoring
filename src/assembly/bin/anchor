@@ -1,22 +1,17 @@
-#!/bin/bash
-# resolve links - $0 may be a softlink
-if [ -z "$ANCHOR_HOME" ];then
-  PRG="$0"
-  while [ -h "$PRG" ] ; do
-    ls=$(ls -ld "$PRG")
-    link=$(expr "$ls" : '.*-> \(.*\)$')
-    if expr "$link" : '/.*' > /dev/null; then
-      PRG="$link"
-    else
-      PRG=$(dirname "$PRG")/"$link"
-    fi
-  done
+#!/bin/bash -e
 
-  cd "$(dirname "$PRG")/.." || exit 1
-  ANCHOR_HOME="$(pwd)"
-  export ANCHOR_HOME
-  cd - &>/dev/null || exit 1
-fi
+SOURCE="${BASH_SOURCE[0]}"
+# resolve $SOURCE until the file is no longer a symlink
+while [ -h "$SOURCE" ]; do
+  SCRIPT_HOME="$( cd -P "$( dirname "$SOURCE" )" >/dev/null && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+  [[ $SOURCE != /* ]] && SOURCE="$SCRIPT_HOME/$SOURCE"
+done
+SCRIPT_HOME="$( cd -P "$( dirname "$SOURCE" )" >/dev/null && pwd )"
+
+# Set project home
+ANCHOR_HOME="$(cd "${SCRIPT_HOME}/.." && pwd)"
 
 # Directory definitions
 export ANCHOR_BIN=${ANCHOR_BIN:-$ANCHOR_HOME/bin}
@@ -25,7 +20,6 @@ export ANCHOR_DOC=${ANCHOR_DOC:-$ANCHOR_HOME/doc}
 export ANCHOR_LIB=${ANCHOR_LIB:-$ANCHOR_HOME/lib}
 
 JARS=$(find "$ANCHOR_LIB" -name '*.jar' | tr '\n' ':')
-
 #--add-exports java.base/java.lang=ALL-UNNAMED
 #--add-exports java.base/jdk.internal.misc=ALL-UNNAMED
 COMMAND="java -cp $ANCHOR_CONF:$JARS \
